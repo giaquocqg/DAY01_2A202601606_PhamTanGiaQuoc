@@ -483,7 +483,12 @@ def batch_compare(prompts: list[str]) -> list[dict]:
         key "prompt" chứa prompt gốc.
     """
     # TODO (bonus): lặp qua prompts, gọi compare_models, thêm key "prompt"
-    raise NotImplementedError("Implement batch_compare")
+    results = []
+    for prompt in prompts:
+        result = compare_models(prompt).copy()
+        result["prompt"] = prompt
+        results.append(result)
+    return results
 
 
 def format_comparison_table(results: list[dict]) -> str:
@@ -494,7 +499,27 @@ def format_comparison_table(results: list[dict]) -> str:
     Gợi ý: cắt text dài còn 40 ký tự cho dễ nhìn.
     """
     # TODO (bonus): dựng chuỗi bảng và trả về
-    raise NotImplementedError("Implement format_comparison_table")
+    def shorten(text: str, limit: int = 40) -> str:
+        return text if len(text) <= limit else text[: limit - 3] + "..."
+
+    headers = ["Prompt", "GPT-4o Response", "Mini Response", "GPT-4o Latency", "Mini Latency"]
+    rows = [headers]
+    for result in results:
+        rows.append([
+            shorten(str(result.get("prompt", ""))),
+            shorten(str(result.get("gpt4o_answer", ""))),
+            shorten(str(result.get("mini_answer", ""))),
+            f'{result.get("gpt4o_time", 0.0):.2f}s',
+            f'{result.get("mini_time", 0.0):.2f}s',
+        ])
+
+    widths = [max(len(row[index]) for row in rows) for index in range(len(headers))]
+
+    def format_row(row: list[str]) -> str:
+        return " | ".join(value.ljust(widths[index]) for index, value in enumerate(row))
+
+    separator = "-+-".join("-" * width for width in widths)
+    return "\n".join([format_row(headers), separator] + [format_row(row) for row in rows[1:]])
 
 
 # ---------------------------------------------------------------------------
